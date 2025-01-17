@@ -6,6 +6,13 @@ export const CARD_TYPES = Object.freeze({
     FUNCTION: 2
 });
 
+export const CARD_ABILITY = Object.freeze({
+    NONE: 0,
+    HEAL: 1,
+    DRAW: 2, 
+    CRIT: 3
+});
+
 export const OPERATIONS = Object.freeze({
     '+': (a, b) => a+b,
     '-': (a, b) => a-b,
@@ -15,10 +22,28 @@ export const OPERATIONS = Object.freeze({
 
 export class Card extends Phaser.GameObjects.Image
 {
-    constructor (scene, x, y, value, frame)
+    constructor (scene, x, y, value, ability, frame)
     {
-        super(scene, x, y, 'card_back', frame);
+        var card_back = "";
+        switch(ability){
+            case CARD_ABILITY.NONE:
+                card_back = "card_back";
+                break;
+            case CARD_ABILITY.HEAL:
+                card_back = "green_back";
+                break;
+            case CARD_ABILITY.DRAW:
+                card_back = "blue_back";
+                break;
+            case CARD_ABILITY.CRIT:
+                card_back = "red_back";
+                break;
+        }
+
+        super(scene, x, y, card_back, frame);
+        
         this.value = value;
+        this.ability = ability;
 
         var is_number = !isNaN(parseFloat(value));
 
@@ -61,5 +86,12 @@ export class Card extends Phaser.GameObjects.Image
 
     getOperation(){
         return OPERATIONS[this.value];
+    }
+
+    clone(){
+        return new Card(
+            this.scene, this.x, this.y, 
+            this.value, this.ability, this.frame
+        );
     }
 }

@@ -17,7 +17,7 @@ export const OFF_SCREEN_Y = -SCREEN_HEIGHT;
 
 export const TEXT_SCROLL_SPEED = 10;
 
-export const INITIAL_BIG_NUMBER = 1;
+export const INITIAL_BIG_NUMBER = 25;
 export const BIG_NUMBER_INCREASE = 25;
 export const BIG_NUMBER_FUNCTION = (x) => BIG_NUMBER_INCREASE*x+INITIAL_BIG_NUMBER;
 

@@ -63,23 +63,40 @@ export function setupModalForDraft(){
     this.modal.footer = this.add.text(footer_position_x, footer_position_y, "Choose a card to add to your deck.", { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#fff' });
     this.modal.footer.setOrigin(0.5);
 
-    var card_options = this.DraftCards();
+    this.card_options = this.DraftCards();
 
     let i = 0
-    for(let card of card_options){
-        card.setPosition(CENTER_X+CARD_WIDTH*(i-1), CENTER_Y);
+    for(let card of this.card_options){
+        card.setPosition(CENTER_X+CARD_WIDTH*(i++-1), CENTER_Y);
         this.children.bringToTop(card);
         this.children.bringToTop(card.card_text);
-        i++;
 
         card.once('pointerup', (args) => {
-            
+
+            // create clone and add it to scene and player deck
+            let card_clone = card.clone();
+            this.add.existing(card_clone);
+            this.AddCardToDeck(card_clone);
+
+            // destroy all displayed cards
+            this.card_options.forEach( (card, i)=> {
+                card.card_text.destroy();
+                card.destroy();
+            });
+
+            this.card_options = [];
+            this.hideModal();
+
         });
     }
-
-
 }
 
 export function setupModalForGameOver(){
     //TODO
+}
+
+export function hideModal(){
+    this.modal.setVisible(false);
+    this.modal.header.destroy();
+    this.modal.footer.destroy();
 }

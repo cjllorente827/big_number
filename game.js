@@ -1,6 +1,6 @@
-import {Card, CARD_SCALE, CARD_TYPES} from "./Card.js";
+import {Card, CARD_SCALE, CARD_TYPES, CARD_ABILITY} from "./Card.js";
 import DraftCards from "./DraftCards.js";
-import { createGUI, updateGUI, setupModalForDraft, setupModalForGameOver } from "./GUI.js";
+import { createGUI, updateGUI, setupModalForDraft, setupModalForGameOver, hideModal } from "./GUI.js";
 
 import { 
     MODAL_HEIGHT, MODAL_WIDTH, 
@@ -28,6 +28,7 @@ class Board extends Phaser.Scene
 
         this.load.spritesheet('green_back', 'green_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('red_back', 'red_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
+        this.load.spritesheet('blue_back', 'blue_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
 
     }
 
@@ -45,6 +46,7 @@ class Board extends Phaser.Scene
         this.createGUI = createGUI.bind(this);
         this.updateGUI = updateGUI.bind(this);
         this.setupModalForDraft = setupModalForDraft.bind(this);
+        this.hideModal = hideModal.bind(this);
     }
 
     create ()
@@ -89,7 +91,7 @@ class Board extends Phaser.Scene
         ];
 
         const equals_button_position = [CENTER_X + 2*CARD_WIDTH, 0.75*CENTER_Y];
-        this.equals_button = new Card(this, equals_button_position[0], equals_button_position[1], '=');
+        this.equals_button = new Card(this, equals_button_position[0], equals_button_position[1], '=', CARD_ABILITY.NONE);
         this.add.existing(this.equals_button);
 
         const answer_position = [CENTER_X + 3*CARD_WIDTH, 0.75*CENTER_Y];
@@ -242,12 +244,13 @@ class Board extends Phaser.Scene
             this.Draft();
         }
         // if big number survives and player dealt less than 10 damage
+        // TODO: Change this to be some fraction of big number
         else if(this.answer < 10){
             this.DamagePlayer(10-this.answer);
         }
 
-        this.DiscardHand();
-        this.Draw(DEFAULT_HAND_SIZE);
+        
+        this.Draw(DEFAULT_HAND_SIZE-this.hand.getLength());
 
 
 
@@ -316,26 +319,29 @@ class Board extends Phaser.Scene
 
 
         for(let i=1; i<5;i++){
-            let new_card = new Card(this, OFF_SCREEN_X, OFF_SCREEN_Y, i);
+            let new_card = new Card(this, 0, 0, i, CARD_ABILITY.NONE);
             this.add.existing(new_card);
-            this.deck.add(new_card);
-            this.input.setDraggable(new_card);
+            this.AddCardToDeck(new_card);
         }
 
         for(let i=1; i<5;i++){
-            let new_card = new Card(this, OFF_SCREEN_X, OFF_SCREEN_Y, i);
+            let new_card = new Card(this, 0, 0, i, CARD_ABILITY.NONE);
             this.add.existing(new_card);
-            this.deck.add(new_card);
-            this.input.setDraggable(new_card);
+            this.AddCardToDeck(new_card);
         }
 
         let operators = ['+', '-', 'x', '/'];
         for (let o of operators){
-            let new_card = new Card(this, OFF_SCREEN_X, OFF_SCREEN_Y, o);
+            let new_card = new Card(this, 0, 0, o, CARD_ABILITY.NONE);
             this.add.existing(new_card);
-            this.deck.add(new_card);
-            this.input.setDraggable(new_card);
+            this.AddCardToDeck(new_card);
         }
+    }
+
+    AddCardToDeck(card){
+        card.setPosition(OFF_SCREEN_X, OFF_SCREEN_Y);
+        this.deck.add(card);
+        this.input.setDraggable(card);
     }
 
     Draft(){
