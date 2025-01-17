@@ -31,3 +31,5 @@ export const MID_FONT = 64;
 export const SMALL_FONT = 32;
 
 export const DEFAULT_CARDS_DRAFTED = 3;
+
+export const CRIT_MODIFIER = 2;

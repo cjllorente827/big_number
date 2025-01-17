@@ -1,6 +1,7 @@
 import {Card, CARD_SCALE, CARD_TYPES, CARD_ABILITY} from "./Card.js";
 import DraftCards from "./DraftCards.js";
 import { createGUI, updateGUI, setupModalForDraft, setupModalForGameOver, hideModal } from "./GUI.js";
+import Evaluate from "./Evaluate.js";
 
 import { 
     MODAL_HEIGHT, MODAL_WIDTH, 
@@ -24,6 +25,7 @@ class Board extends Phaser.Scene
         this.load.setBaseURL('assets');
         this.load.spritesheet('card_back', 'card_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('card_slot', 'card_slot.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
+        this.load.spritesheet('end_turn', 'end_turn.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('modal', 'modal.png', { frameWidth: MODAL_WIDTH, frameHeight: MODAL_HEIGHT});
 
         this.load.spritesheet('green_back', 'green_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
@@ -47,6 +49,7 @@ class Board extends Phaser.Scene
         this.updateGUI = updateGUI.bind(this);
         this.setupModalForDraft = setupModalForDraft.bind(this);
         this.hideModal = hideModal.bind(this);
+        this.Evaluate = Evaluate.bind(this);
     }
 
     create ()
@@ -93,6 +96,11 @@ class Board extends Phaser.Scene
         const equals_button_position = [CENTER_X + 2*CARD_WIDTH, 0.75*CENTER_Y];
         this.equals_button = new Card(this, equals_button_position[0], equals_button_position[1], '=', CARD_ABILITY.NONE);
         this.add.existing(this.equals_button);
+
+        const end_turn_button_position = [0.9*SCREEN_WIDTH, 0.8*SCREEN_HEIGHT];
+        this.end_turn_button = this.add.image(end_turn_button_position[0], end_turn_button_position[1], "end_turn");
+        this.end_turn_button.setScale(CARD_SCALE);
+        this.end_turn_button.setInteractive();
 
         const answer_position = [CENTER_X + 3*CARD_WIDTH, 0.75*CENTER_Y];
         this.answer = "";
@@ -159,6 +167,10 @@ class Board extends Phaser.Scene
         this.equals_button.on('pointerout', ()=>{
             this.equals_button.setTexture('card_back');
         });
+
+        this.end_turn_button.on('pointerup', ()=>{
+            this.EndTurn();
+        });
     }
 
     PlayCard(card, slot){
@@ -212,50 +224,7 @@ class Board extends Phaser.Scene
         return true;
     }
 
-    Evaluate(){
-        
-        
-        let numbers = [];
-        let operations = [];
-
-        for(let slot of this.card_slots.getChildren()){
-            let card = slot.card;
-            slot.card = null;
-            if (card.type === CARD_TYPES.NUMBER){
-                numbers.push( card.getNumber() );
-                this.Discard(card);
-
-            }
-            else if(card.type == CARD_TYPES.OPERATOR){
-                operations.push( card.getOperation() );
-                this.Discard(card);
-            }
-        }
-
-        this.answer = operations[0](numbers[0], numbers[1]);
-        this.answer_text.setText(this.answer);
-
-        this.big_number -= this.answer;
-        
-        // if big number dies, increment iterations and create new bigger number
-        if(this.big_number <= 0){
-            this.iteration++;
-            this.big_number = BIG_NUMBER_FUNCTION(this.iteration);
-            this.Draft();
-        }
-        // if big number survives and player dealt less than 10 damage
-        // TODO: Change this to be some fraction of big number
-        else if(this.answer < 10){
-            this.DamagePlayer(10-this.answer);
-        }
-
-        
-        this.Draw(DEFAULT_HAND_SIZE-this.hand.getLength());
-
-
-
-    }
-
+    
     DamagePlayer(amount){
         this.player_health -= amount;
 
@@ -350,6 +319,17 @@ class Board extends Phaser.Scene
         this.modal.setVisible(true);
     }
 
+    StartNewRound(){
+        this.DiscardHand();
+        this.Draw(DEFAULT_HAND_SIZE);
+    }
+
+    EndTurn(){
+        
+        this.DamagePlayer(10);
+        this.DiscardHand();
+        this.Draw(DEFAULT_HAND_SIZE);
+    }
 
     print_once(message){
         if(this.has_printed){

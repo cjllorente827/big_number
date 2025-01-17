@@ -7,10 +7,10 @@ export const CARD_TYPES = Object.freeze({
 });
 
 export const CARD_ABILITY = Object.freeze({
-    NONE: 0,
-    HEAL: 1,
-    DRAW: 2, 
-    CRIT: 3
+    NONE: "none",
+    HEAL: "heal",
+    DRAW: "draw", 
+    CRIT: "crit"
 });
 
 export const OPERATIONS = Object.freeze({
