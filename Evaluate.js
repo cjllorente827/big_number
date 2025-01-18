@@ -1,5 +1,5 @@
 import { CARD_ABILITY, CARD_TYPES } from "./Card.js";
-import { BIG_NUMBER_FUNCTION, CRIT_MODIFIER } from "./constants.js";
+import { BIG_NUMBER_FUNCTION, CRIT_MODIFIER, DEFAULT_MAX_HP } from "./constants.js";
 
 export default function Evaluate(){
     let numbers = [];
@@ -55,6 +55,11 @@ export default function Evaluate(){
 
 
 function dealDamage(scene){
+
+    if(scene.answer > scene.big_number_stun_threshold){
+        scene.big_number_stunned = true;
+    }
+
     scene.big_number -= scene.answer;
     scene.answer_text.setText(scene.answer);
     scene.answer_text.setColor("#ccc");
@@ -63,23 +68,34 @@ function dealDamage(scene){
 function healPlayer(scene){
     scene.player_health -= scene.answer;
 
+    if (scene.player_health > DEFAULT_MAX_HP){
+        scene.player_health = DEFAULT_MAX_HP;
+    }
+
     // TODO change to player HP scroll
-    scene.answer_text.setText(scene.answer);
+    scene.answer_text.setText(`HP+${-scene.answer}`);
     scene.answer_text.setColor("#00ff00");
 }
 
 function drawCards(scene){
 
-    // TODO figure out what we're doing here
-    scene.Draw(1);
+    let str = scene.answer.toString();
+    let draw_number = parseFloat(str[2]);
+    scene.Draw(draw_number);
 
-    scene.answer_text.setText("Draw 1");
+    scene.answer_text.setText(`${scene.answer.toFixed(2)}`);
     scene.answer_text.setColor("#0000ff");
 }
 
 function critDamage(scene){
-    scene.big_number -= CRIT_MODIFIER*scene.answer;
 
-    scene.answer_text.setText(CRIT_MODIFIER*scene.answer);
+    let amount = CRIT_MODIFIER*scene.answer
+    scene.big_number -= amount;
+
+    if(amount > scene.big_number_stun_threshold){
+        scene.big_number_stunned = true;
+    }
+
+    scene.answer_text.setText(`${CRIT_MODIFIER}x${scene.answer}`);
     scene.answer_text.setColor("#ff0000");
 }

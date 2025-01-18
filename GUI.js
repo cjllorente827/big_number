@@ -18,6 +18,7 @@ export function createGUI(){
     this.discard_display = this.add.text(0, 35, `Discard: 0`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#fff' });
     this.iteration_display = this.add.text(0, 70, `Numbers defeated: 0`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#fff' });
     this.player_health_display = this.add.text(0, 105, `HP: ${this.player_health}`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#fff' });
+    this.big_number_stunned_display = this.add.text(0, 140, `BigNumber stunned: ${this.big_number_stunned}`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#fff' });
 
     this.modal = this.add.image(CENTER_X, CENTER_Y, 'modal');
     this.modal.setVisible(false);
@@ -46,6 +47,7 @@ export function updateGUI(){
     this.discard_display.setText(`Discard: ${this.discard.getLength()}`);
 
     this.player_health_display.setText(`HP: ${this.player_health}`);
+    this.big_number_stunned_display.setText(`BigNumber stunned: ${this.big_number_stunned} (Threshold: ${this.big_number_stun_threshold})`);
 }
 
 export function setupModalForDraft(){
@@ -92,7 +94,28 @@ export function setupModalForDraft(){
 }
 
 export function setupModalForGameOver(){
-    //TODO
+    this.children.bringToTop(this.modal);
+
+    const header_position_x = this.modal.x;
+    const header_position_y = this.modal.y - 0.3*MODAL_HEIGHT;
+
+    const footer_position_x = this.modal.x;
+    const footer_position_y = this.modal.y+0.3*MODAL_HEIGHT;
+
+    this.modal.header = this.add.text(header_position_x, header_position_y, "Game Over!", { fontFamily: 'Arial', fontSize: BIG_FONT, color: '#ff0000' });
+    this.modal.header.setOrigin(0.5);
+
+    this.modal.footer = this.add.image(footer_position_x, footer_position_y, 'new_game');
+    this.modal.footer.setInteractive();
+    this.modal.footer.setOrigin(0.5);
+
+    this.modal.stats = this.add.text(this.modal.x, this.modal.y, `Numbers defeated: ${this.iteration}`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#ffffff' })
+
+    this.modal.footer.once('pointerup', (args) => {
+        this.DestroyAllGameObjects();
+        this.StartNewGame();
+        this.hideModal();
+    });
 }
 
 export function hideModal(){

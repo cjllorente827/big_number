@@ -45,6 +45,8 @@ export class Card extends Phaser.GameObjects.Image
         this.value = value;
         this.ability = ability;
 
+        this.time_last_clicked = null;
+
         var is_number = !isNaN(parseFloat(value));
 
         if (is_number)
@@ -62,6 +64,31 @@ export class Card extends Phaser.GameObjects.Image
         this.card_text.setOrigin(0.5);
         this.setScale(CARD_SCALE);
         this.setInteractive();
+
+
+        // effectively creates a dblclick listener for cards
+        this.on("pointerup", ()=>{
+            
+            if(this.time_last_clicked === null){
+                this.time_last_clicked = new Date().getTime();
+            }
+            else{
+                let now = new Date().getTime();
+                let elapsed =  now - this.time_last_clicked;
+                
+                if (elapsed <= 350){
+                    this.time_last_clicked = null;
+                    
+                    //
+                    this.scene.PlayCardIfPossible(this);
+                }
+                else{
+                    this.time_last_clicked = now;
+                }
+            }
+            
+
+        });
     }
 
     removedFromScene ()
@@ -93,5 +120,10 @@ export class Card extends Phaser.GameObjects.Image
             this.scene, this.x, this.y, 
             this.value, this.ability, this.frame
         );
+    }
+
+    destroy(){
+        this.card_text.destroy();
+        super.destroy();
     }
 }

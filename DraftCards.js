@@ -3,8 +3,8 @@ import { Card, CARD_ABILITY } from "./Card.js";
 import { DEFAULT_CARDS_DRAFTED, OFF_SCREEN_X, OFF_SCREEN_Y } from "./constants.js";
 
 
-//const ABILITY_CHANCE = 0.333;
-const ABILITY_CHANCE = 1.0;
+const ABILITY_CHANCE = 0.333;
+//const ABILITY_CHANCE = 1.0;
 const OPERATOR_CHANCE = 0.333;
 
 // returns a list of cards chosen randomly for the purposes
@@ -32,7 +32,9 @@ export default function DraftCards(){
         }
 
         let new_card = new Card(
-            this, OFF_SCREEN_X, OFF_SCREEN_Y, value, ability);
+            this, OFF_SCREEN_X, OFF_SCREEN_Y, value, ability
+        );
+        
         this.add.existing(new_card);
         card_list.push(new_card);
     }
@@ -71,9 +73,9 @@ function chooseOperator(){
         '-': 0.5,
         'x': 0.75,
         '/': 1.0,
-        '^': -1, // Not yet implemented
-        '=': -1, // Not yet implemented
-        '±': -1  // Not yet implemented
+        '^': -1, // Not yet implemented (should be rare)
+        '=': -1, // Not yet implemented (should be rare)
+        '±': -1  // Not yet implemented (should be rare)
     });
 
     let rand = Math.random();

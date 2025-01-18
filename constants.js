@@ -20,16 +20,18 @@ export const TEXT_SCROLL_SPEED = 10;
 export const INITIAL_BIG_NUMBER = 25;
 export const BIG_NUMBER_INCREASE = 25;
 export const BIG_NUMBER_FUNCTION = (x) => BIG_NUMBER_INCREASE*x+INITIAL_BIG_NUMBER;
+export const INITIAL_STUN_THRESHOLD = 10;
 
 export const DEFAULT_HAND_SIZE = 7;
+export const MAX_HAND_SIZE = 10;
 
-export const DEFAULT_HP = 100;
-export const BONUS_HP = 0;
+export const DEFAULT_MAX_HP = 20;
 
 export const BIG_FONT = 128;
 export const MID_FONT = 64;
 export const SMALL_FONT = 32;
 
 export const DEFAULT_CARDS_DRAFTED = 3;
+export const DEFAULT_DAMAGE_PER_TURN = 3;
 
 export const CRIT_MODIFIER = 2;

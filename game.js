@@ -6,13 +6,16 @@ import Evaluate from "./Evaluate.js";
 import { 
     MODAL_HEIGHT, MODAL_WIDTH, 
     DEFAULT_HAND_SIZE, 
-    DEFAULT_HP, BONUS_HP,
+    DEFAULT_MAX_HP,
     BIG_NUMBER_FUNCTION, 
     CENTER_X, CENTER_Y,
     SCREEN_HEIGHT, SCREEN_WIDTH,
     CARD_HEIGHT, CARD_WIDTH,
     SLOT_SIZE_FACTOR,
     OFF_SCREEN_X, OFF_SCREEN_Y,
+    MAX_HAND_SIZE,
+    INITIAL_STUN_THRESHOLD,
+    DEFAULT_DAMAGE_PER_TURN
 } from "./constants.js"; 
 
 
@@ -26,28 +29,24 @@ class Board extends Phaser.Scene
         this.load.spritesheet('card_back', 'card_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('card_slot', 'card_slot.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('end_turn', 'end_turn.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
+        this.load.spritesheet('new_game', 'new_game.png', { frameWidth: 349, frameHeight: 175});
         this.load.spritesheet('modal', 'modal.png', { frameWidth: MODAL_WIDTH, frameHeight: MODAL_HEIGHT});
 
         this.load.spritesheet('green_back', 'green_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('red_back', 'red_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
         this.load.spritesheet('blue_back', 'blue_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
+        this.load.spritesheet('purple_back', 'purple_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
+        this.load.spritesheet('black_back', 'black_back.png', { frameWidth: CARD_WIDTH, frameHeight: CARD_HEIGHT});
 
     }
 
     init(){
-        this.iteration = 0;
-        this.big_number = BIG_NUMBER_FUNCTION(this.iteration);
-        this.player_health = DEFAULT_HP+BONUS_HP;
-
-        this.card_slots = this.add.group();
-        this.hand = this.add.group();
-        this.deck = this.add.group();
-        this.discard = this.add.group();
 
         this.DraftCards = DraftCards.bind(this);
         this.createGUI = createGUI.bind(this);
         this.updateGUI = updateGUI.bind(this);
         this.setupModalForDraft = setupModalForDraft.bind(this);
+        this.setupModalForGameOver = setupModalForGameOver.bind(this);
         this.hideModal = hideModal.bind(this);
         this.Evaluate = Evaluate.bind(this);
     }
@@ -56,17 +55,7 @@ class Board extends Phaser.Scene
     {
         this.createGUI();
 
-        this.SetupBoard();
-
-        this.CreateBaseDeck();
-
-        this.Draw(DEFAULT_HAND_SIZE);
-
-        this.displayHand();
-
-        this.setupEventListeners();
-
-        
+        this.StartNewGame();        
     }
 
     update(t, dt){
@@ -74,10 +63,38 @@ class Board extends Phaser.Scene
         this.updateGUI();
     }
 
+    StartNewGame(){
+        this.iteration = 0;
+        this.big_number = BIG_NUMBER_FUNCTION(this.iteration);
+        this.big_number_stunned = false;
+        this.big_number_stun_threshold = INITIAL_STUN_THRESHOLD;
+        this.player_health = DEFAULT_MAX_HP;
+
+        this.card_slots = this.add.group();
+        this.hand = this.add.group();
+        this.deck = this.add.group();
+        this.discard = this.add.group();
+
+        this.SetupBoard();
+
+        this.CreateBaseDeck();
+
+        this.Draw(DEFAULT_HAND_SIZE);
+
+        this.setupEventListeners();
+    }
+
+    DestroyAllGameObjects(){
+        this.card_slots.destroy(true, true);
+        this.hand.destroy(true, true);
+        this.deck.destroy(true, true);
+        this.discard.destroy(true, true);
+    }
+
     displayHand(){
 
-        let deck_start_x = 0.1*SCREEN_WIDTH;
-        let deck_start_y = SCREEN_HEIGHT - CARD_HEIGHT*CARD_SCALE;
+        let deck_start_x = 0.05*SCREEN_WIDTH;
+        let deck_start_y = SCREEN_HEIGHT - CARD_HEIGHT*CARD_SCALE/2 - 10 ;
         let x_offset = CARD_WIDTH*CARD_SCALE+10;
         let i = 0;
         for (let card of this.hand.getChildren()){
@@ -97,9 +114,9 @@ class Board extends Phaser.Scene
         this.equals_button = new Card(this, equals_button_position[0], equals_button_position[1], '=', CARD_ABILITY.NONE);
         this.add.existing(this.equals_button);
 
-        const end_turn_button_position = [0.9*SCREEN_WIDTH, 0.8*SCREEN_HEIGHT];
+        const end_turn_button_position = [0.95*SCREEN_WIDTH, 0.6*SCREEN_HEIGHT];
         this.end_turn_button = this.add.image(end_turn_button_position[0], end_turn_button_position[1], "end_turn");
-        this.end_turn_button.setScale(CARD_SCALE);
+        this.end_turn_button.setScale(0.5);
         this.end_turn_button.setInteractive();
 
         const answer_position = [CENTER_X + 3*CARD_WIDTH, 0.75*CENTER_Y];
@@ -182,6 +199,34 @@ class Board extends Phaser.Scene
         card.disableInteractive();
     }
 
+    // plays a card in the first available slot if one exists
+    PlayCardIfPossible(card){
+
+        var slot = null;
+
+        for(let card_slot of this.card_slots.getChildren()){
+            let isValid = card_slot.accepts === card.type && card_slot.card === null;
+
+            if(isValid){
+                slot = card_slot;
+                break;
+            }
+        }
+
+        if (slot === null){
+            return;
+        }
+
+        // remove from hand
+        this.hand.remove(card);
+        // add to slot
+        slot.card = card;
+        card.setPosition(slot.x, slot.y);
+        card.disableInteractive();
+
+        this.displayHand();
+    }
+
     overlapsWithSlot(card){
         var bottom_left = card.getBottomLeft();
         var bottom_right = card.getBottomRight();
@@ -224,14 +269,19 @@ class Board extends Phaser.Scene
         return true;
     }
 
-    
+    // removes the amount from the player's health
+    // if the player's health drops to or below 0
+    // this function returns true and calls the game over function
     DamagePlayer(amount){
         this.player_health -= amount;
 
         if(this.player_health <= 0){
             this.player_health = 0;
-            //TODO: Game Over
+            this.GameOver();
+            return true;
         }
+
+        return false;
     }
         
 
@@ -249,6 +299,11 @@ class Board extends Phaser.Scene
         this.hand.clear();
     }
 
+    GameOver(){
+        this.setupModalForGameOver();
+        this.modal.setVisible(true);
+    }
+
     RefreshDeck(){
         if(this.discard.getChildren().length > 0){
             for(let card of this.discard.getChildren()){
@@ -261,14 +316,22 @@ class Board extends Phaser.Scene
 
     Draw(number){
 
+        // number of cards drawn is limited by max hand size
+        if(number + this.hand.getLength() > MAX_HAND_SIZE){
+            number = MAX_HAND_SIZE - this.hand.getLength();
+        }
+
+        // if we're drawing more cards than remain in the deck
+        // refresh the deck first, and then draw
         if (number > this.deck.getChildren().length ){
 
             this.RefreshDeck();
 
+            // if this number is still somehow larger than the number of cards
+            // in the deck, draw all cards in the deck instead
             if (number > this.deck.getChildren().length ){
                 number = this.deck.getChildren().length;
             }
-            
         }
 
         for(let i=0;i<number;i++){
@@ -286,19 +349,23 @@ class Board extends Phaser.Scene
 
     CreateBaseDeck(){
 
-
+        // adds two copies of normal 1-4 cards
         for(let i=1; i<5;i++){
             let new_card = new Card(this, 0, 0, i, CARD_ABILITY.NONE);
             this.add.existing(new_card);
             this.AddCardToDeck(new_card);
+
+            let new_card2 = new Card(this, 0, 0, i, CARD_ABILITY.NONE);
+            this.add.existing(new_card2);
+            this.AddCardToDeck(new_card2);
         }
 
-        for(let i=1; i<5;i++){
-            let new_card = new Card(this, 0, 0, i, CARD_ABILITY.NONE);
-            this.add.existing(new_card);
-            this.AddCardToDeck(new_card);
-        }
+        // add one normal 5 card
+        let five_card = new Card(this, 0, 0, 5, CARD_ABILITY.NONE);
+        this.add.existing(five_card);
+        this.AddCardToDeck(five_card);
 
+        // add the four basic operators
         let operators = ['+', '-', 'x', '/'];
         for (let o of operators){
             let new_card = new Card(this, 0, 0, o, CARD_ABILITY.NONE);
@@ -320,13 +387,24 @@ class Board extends Phaser.Scene
     }
 
     StartNewRound(){
+
+        this.big_number_stunned = false;
         this.DiscardHand();
         this.Draw(DEFAULT_HAND_SIZE);
     }
 
     EndTurn(){
         
-        this.DamagePlayer(10);
+        if(!this.big_number_stunned){
+            let game_over = this.DamagePlayer(DEFAULT_DAMAGE_PER_TURN);
+            if (game_over){
+                return;
+            }
+        }
+        else{
+            this.big_number_stunned = false;
+            this.big_number_stun_threshold++;
+        }
         this.DiscardHand();
         this.Draw(DEFAULT_HAND_SIZE);
     }
