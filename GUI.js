@@ -110,11 +110,12 @@ export function setupModalForGameOver(){
     this.modal.footer.setOrigin(0.5);
 
     this.modal.stats = this.add.text(this.modal.x, this.modal.y, `Numbers defeated: ${this.iteration}`, { fontFamily: 'Arial', fontSize: SMALL_FONT, color: '#ffffff' })
+    this.modal.stats.setOrigin(0.5);
 
     this.modal.footer.once('pointerup', (args) => {
-        this.DestroyAllGameObjects();
-        this.StartNewGame();
         this.hideModal();
+        this.DestroyAllGameObjects();
+        this.StartNewGame();        
     });
 }
 
@@ -122,4 +123,8 @@ export function hideModal(){
     this.modal.setVisible(false);
     this.modal.header.destroy();
     this.modal.footer.destroy();
+
+    if(this.modal.stats){
+        this.modal.stats.destroy();
+    }
 }
